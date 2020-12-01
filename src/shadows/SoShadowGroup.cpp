@@ -340,6 +340,7 @@
 #include "glue/glp.h"
 #include "misc/SoShaderGenerator.h"
 #include "caches/SoShaderProgramCache.h"
+#include "rendering/SoGL.h"
 
 // *************************************************************************
 
@@ -489,7 +490,7 @@ public:
   }
   ~SoShadowLightCache() {
     if (this->depthmapscene) this->depthmapscene->unref();
-    if (this->bboxnode) this->bboxnode->ref();
+    if (this->bboxnode) this->bboxnode->unref();
     if (this->maxshadowdistance) this->maxshadowdistance->unref();
     if (this->vsm_program) this->vsm_program->unref();
     if (this->vsm_farval) this->vsm_farval->unref();
@@ -1406,6 +1407,7 @@ SoShadowGroupP::setVertexShader(SoState * state)
   int i;
   SoShaderGenerator & gen = this->vertexgenerator;
   gen.reset(FALSE);
+  gen.setVersion("#version 120");
 
   SbBool storedinvalid = SoCacheElement::setInvalid(FALSE);
 
@@ -1585,6 +1587,7 @@ SoShadowGroupP::setFragmentShader(SoState * state)
 
   SoShaderGenerator & gen = this->fragmentgenerator;
   gen.reset(FALSE);
+  gen.setVersion("#version 120");
 
   SbBool perpixelspot = FALSE;
   SbBool perpixelother = FALSE;
@@ -1837,13 +1840,11 @@ SoShadowGroupP::setFragmentShader(SoState * state)
     break;
   case SoEnvironmentElement::FOG:
     gen.addMainStatement("float fog = exp(-gl_Fog.density * gl_FogFragCoord);\n");
-    gen.setVersion("#version 110");
     break;
   case SoEnvironmentElement::SMOKE:
     gen.addMainStatement("float fogfrag =  gl_FogFragCoord;");
     gen.addMainStatement("float fogdens =  gl_Fog.density;");
     gen.addMainStatement("float fog = exp(-fogdens * fogdens * fogfrag * fogfrag);\n");
-    gen.setVersion("#version 110");
     break;
   }
   if (fogType != SoEnvironmentElement::NONE) {
@@ -2017,6 +2018,7 @@ SoShadowLightCache::createVSMProgram(void)
   SoShaderGenerator & fgen = this->vsm_fragment_generator;
 
   vgen.reset(FALSE);
+  vgen.setVersion("#version 120");
 
   SbBool dirlight = this->light->isOfType(SoDirectionalLight::getClassTypeId());
 
@@ -2028,6 +2030,7 @@ SoShadowLightCache::createVSMProgram(void)
   vshader->sourceType = SoShaderObject::GLSL_PROGRAM;
 
   fgen.reset(FALSE);
+  fgen.setVersion("#version 120");
 #ifdef DISTRIBUTE_FACTOR
   SbString str;
   str.sprintf("const float DISTRIBUTE_FACTOR = %.1f;\n", DISTRIBUTE_FACTOR);
@@ -2101,6 +2104,13 @@ SoShadowGroupP::shader_enable_cb(void * closure,
       if (enable) glEnable(GL_TEXTURE_2D);
       else glDisable(GL_TEXTURE_2D);
       cc_glglue_glActiveTexture(glue, GL_TEXTURE0);
+
+      GLenum glerror = sogl_glerror_debugging() ? glGetError() : GL_NO_ERROR;
+      while (glerror) {
+          SoDebugError::postWarning("SoShadowGroupP::shader_enable_cb",
+              "glError() = %d\n", glerror);
+          glerror = glGetError();
+      }
     }
   }
 }

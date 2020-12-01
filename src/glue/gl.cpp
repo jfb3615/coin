@@ -1332,25 +1332,6 @@ glglue_resolve_symbols(cc_glglue * w)
     if (env && (atoi(env) > 0)) { w->glBindBuffer = NULL; }
   }
 
-
-  /*
-    All Intel drivers usually crash when we try to use VBO. This might be a bug in
-    our VBO code, but we choose to disable VBO rendering for all Intel cards until
-    we have time to look into this. pederb, 2007-08-16
-  */
-
-  if (w->glBindBuffer) {
-    if (coin_runtime_os() != COIN_OS_X) { /* Apple has proper drivers */
-      /* Enable users to override this workaround by setting COIN_VBO=1 */
-      const char * env = coin_getenv("COIN_VBO");
-      if (!env || (atoi(env) > 0)) {
-        if (w->vendor_is_intel) {
-          w->glBindBuffer = NULL;
-        }
-      }
-    }
-  }
-
   /*
     Sylvain Carette reported problems with some old 3DLabs drivers and VBO rendering.
     The drivers were from 2006, so we disable VBO rendering if 3DLabs and that driver
@@ -1997,107 +1978,6 @@ glglue_check_trident_clampedge_bug(const char * vendor,
     (strcmp(version, "1.2.1") == 0);
 }
 
-static SbBool
-glglue_check_ati_vbo_in_displaylist_bug(const char * vendor,
-                                        const char * COIN_UNUSED_ARG(renderer),
-                                        const char * COIN_UNUSED_ARG(version))
-{
-  /*
-   * FIXME: is there a better way to test if we're on Mac OS X
-   * pederb, 20051026
-   */
-#if !defined(HAVE_AGL) && !defined(HAVE_CGL) /* bug is not present on Mac OS X */
-  /*
-   * The ATI Windows/Linux driver has a nasty bug which causes a crash
-   * in OpenGL whenever a VBO render call is added to a display
-   * list. This has been confirmed on several ATI drivers.  (tested
-   * drivers on Windows: 1.4.4145, 1.4.4054, and on Linux: 1.3.4641)
-   *
-   * FIXME: Check version string if ATI ever fixes this bug. The
-   * scene graph below can be used to reproduce the bug:
-
-   #Inventor V2.1 ascii
-
-   MaterialBinding { value PER_VERTEX_INDEXED }
-   LightModel { model BASE_COLOR }
-
-   BaseColor {
-     rgb [
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0,
-      1 0 0, 0 1 0, 0 0 1, 1 1 0
-      ]
-   }
-   Coordinate3 {
-     point [
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0,
-      0 0 0, 1 0 0, 1 1 0, 0 1 0
-     ]
-   }
-   PointSet {
-     numPoints 44
-   }
-   ShapeHints {
-     vertexOrdering COUNTERCLOCKWISE
-     faceType CONVEX
-     shapeType UNKNOWN_SHAPE_TYPE
-   }
-   IndexedFaceSet {
-     coordIndex [
-       0,1,2,3,-1,
-       4,5,6,7, -1,
-       8,9,10,11, -1,
-       12,13,14,15, -1,
-       16,17,18,19,-1,
-       20,21,22,23,-1,
-       24,25,26,27,-1,
-       28,29,30,31,-1,
-       32,33,34,35,-1,
-       36,37,38,39,-1,
-       40,41,42,43,-1
-     ]
-   }
-   IndexedLineSet {
-     coordIndex [
-       0,1,2,3,-1,
-       4,5,6,7, -1,
-       8,9,10,11, -1,
-       12,13,14,15, -1,
-       16,17,18,19,-1,
-       20,21,22,23,-1,
-       24,25,26,27,-1,
-       28,29,30,31,-1,
-       32,33,34,35,-1,
-       36,37,38,39,-1,
-       40,41,42,43,-1
-     ]
-   }
-  *
-  */
-  return
-    (strcmp(vendor, "ATI Technologies Inc.") == 0);
-#else /* ATI driver bug */
-  return FALSE;
-#endif /* Mac OS X drivers are ok */
-}
-
 /* Give warnings on known faulty drivers. */
 static void
 glglue_check_driver(const char * vendor, const char * renderer,
@@ -2539,11 +2419,6 @@ cc_glglue_instance(int contextid)
                                gi->max_anisotropy);
       }
     }
-
-    /* check for ATI vbo in displaylist bug */
-    gi->vbo_in_displaylist_ok = !glglue_check_ati_vbo_in_displaylist_bug(gi->vendorstr,
-                                                                         gi->rendererstr,
-                                                                         gi->versionstr);
 
     glglue_check_driver(gi->vendorstr, gi->rendererstr, gi->versionstr);
 
@@ -5249,9 +5124,18 @@ coin_gl_current_context(void)
 /* ********************************************************************** */
 
 SbBool
-coin_glglue_vbo_in_displaylist_supported(const cc_glglue * glw)
+coin_glglue_vbo_in_displaylist_supported(const cc_glglue * COIN_UNUSED_ARG(glue))
 {
-  return glw->vbo_in_displaylist_ok;
+  // Older ATI Windows/Linux drivers had a nasty bug which caused a crash
+  // in OpenGL whenever a VBO render call was added to a display list.
+  // Newer drivers are known to work.
+  static int disable = -1;
+  if (disable == -1) {
+    disable = glglue_resolve_envvar("COIN_GLGLUE_DISABLE_VBO_IN_DISPLAYLIST");
+  }
+  if (disable) { return FALSE; }
+
+  return TRUE;
 }
 
 /* ********************************************************************** */
@@ -5259,12 +5143,15 @@ coin_glglue_vbo_in_displaylist_supported(const cc_glglue * glw)
 SbBool
 coin_glglue_non_power_of_two_textures(const cc_glglue * glue)
 {
+  // ATi and Intel both have had problems with this feature, especially
+  // on old drivers.  Newer drivers are known to work.
+  static int disable = -1;
+  if (disable == -1) {
+    disable = glglue_resolve_envvar("COIN_GLGLUE_DISABLE_NON_POWER_OF_TWO_TEXTURES");
+  }
+  if (disable) { return FALSE; }
+
   if (!glglue_allow_newer_opengl(glue)) return FALSE;
-  
-  // ATi and Intel both seem to have problems with this feature,
-  // especially on old drivers. Disable for everything except nVidia
-  // until we can build a better driver database
-  if (!glue->vendor_is_nvidia) return FALSE;
   return glue->non_power_of_two_textures;
 }
 
