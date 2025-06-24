@@ -57404,9 +57404,21 @@
       <arglist></arglist>
     </member>
     <member kind="enumvalue">
+      <name>SHADED_HIDDEN_LINES</name>
+      <anchorfile>classSoRenderManager.html</anchorfile>
+      <anchor>a4b8d99cff0fd91e31bc2c5d33610f6ebad833697828daab79d7fff84ed6530189</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
       <name>SEPARATE_OUTPUT</name>
       <anchorfile>classSoRenderManager.html</anchorfile>
       <anchor>a34169ef6635a94765aa0d4f25537a26ea7534ce29815527d9f009b0df2e90000d</anchor>
+      <arglist></arglist>
+    </member>
+    <member kind="enumvalue">
+      <name>SHADED_HIDDEN_LINES</name>
+      <anchorfile>classSoRenderManager.html</anchorfile>
+      <anchor>a4b8d99cff0fd91e31bc2c5d33610f6ebad833697828daab79d7fff84ed6530189</anchor>
       <arglist></arglist>
     </member>
     <member kind="enumeration">
@@ -90538,6 +90550,7 @@
     <name>coin_new_features</name>
     <title>New Features in Coin</title>
     <filename>coin_new_features.html</filename>
+    <subpage>coin403.html</subpage>
     <subpage>coin402.html</subpage>
     <subpage>coin401.html</subpage>
     <subpage>coin400.html</subpage>
@@ -90552,6 +90565,11 @@
     <subpage>coin220.html</subpage>
     <subpage>coin210.html</subpage>
     <subpage>coin200.html</subpage>
+  </compound>
+  <compound kind="page">
+    <name>coin403</name>
+    <title>New Features in Coin v4.0.3</title>
+    <filename>coin403.html</filename>
   </compound>
   <compound kind="page">
     <name>coin402</name>
